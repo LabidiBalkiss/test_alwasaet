@@ -1,14 +1,13 @@
 <template>
   <div class="layout">
     <aside class="sidebar">
-
       <div class="logo-section">
         <Logo class="icon"/>
       </div>
       <!-- Top buttons -->
       <button
           class="sidebar__button sidebar__inbox"
-          :class="{ 'selected': selectedList === 0 }"
+          :class="{ 'selected': selectedListTitle === 0 }"
           @click="selectList(0)"
       >
         <IconInbox class="icon"/>
@@ -18,12 +17,12 @@
 
       <button
           class="sidebar__button sidebar__archive"
-          :class="{ 'selected': selectedList === 1 }"
+          :class="{ 'selected': selectedListTitle === 1 }"
           @click="selectList(1)"
       >
         <IconArchive class="icon"/>
         <span class="text">Archive</span>
-        <span class="badge">2</span>
+        <span class="badge">{{ archived_emails.length }}</span>
       </button>
 
       <!-- Bottom Logout button -->
@@ -35,26 +34,45 @@
 
     <div class="content">
       <!-- Content area -->
-      <h1 class="content__title">{{ pageTitle }}</h1>
-      <div class="options">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="selectAll" @change="selectAllEmails"/>
-          Email Selected ({{ selectedCount }})
-        </label>
-        <button class="action-button" @click="markAsRead">Mark as Read (r)</button>
-        <button class="action-button" @click="archiveEmails">Archive (a)</button>
+      <div class="header">
+        <h1 class="content__title">{{ pageTitle }}</h1>
+        <div class="options">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="selectAll" @change="selectAllEmails"/>
+            Email Selected ({{ selectedCount }})
+          </label>
+          <div class="options__right">
+            <button
+                class="options__button"
+                @click="markAsRead"
+            >
+              <ArchiveIcon class="options__icon"/>
+              <span class="text">Mark as Read (r)</span>
+            </button>
+            <button
+                class="options__button"
+                @click="archiveEmails"
+            >
+              <TrashIcon class="options__icon"/>
+              <span class="text">Archive (a)</span>
+            </button>
+          </div>
+        </div>
       </div>
       <ul class="content__list">
-        <li v-for="email in emails" :key="email.id" class="content__item" @click="openModal(email)">
+        <Loader v-if="loading"></Loader>
+        <li v-else v-for="email in emails" :key="email.id"
+            :class="{ 'content__item': true, 'marked-as-read': email.read }">
           <label class="checkbox-label content__checklist">
-            <input type="checkbox" v-model="selectedEmails"/>
-            <strong>{{ email.subject }}</strong> <!-- Bold label -->
+            <input type="checkbox" @click="()=>{selectEmail(email)}"
+                   :checked="typeof selectedEmails[email.id] !== 'undefined'"/>
+            <strong @click="openModal(email)" class="capitalize">{{ email.subject }}</strong>
           </label>
           <div class="separator"></div>
         </li>
       </ul>
     </div>
-    <EmailModal :email="selectedEmail" :isOpen="isModalOpen" @close="closeModal" />
+    <EmailModal :email="selectedEmail" :isOpen="isModalOpen" @close="closeModal"/>
   </div>
 </template>
 
@@ -66,28 +84,44 @@ import IconArchive from "assets/icons/ArchiveIcon.vue";
 import {ref, onMounted} from 'vue';
 import {useEmailsStore} from '~/store/emails';
 import {useModalStore} from '~/store/modal';
-
+import TrashIcon from "assets/icons/TrashIcon.vue";
+import ArchiveIcon from "assets/icons/ArchiveIcon.vue";
+import {computed} from 'vue'
+import Loader from "~/components/Loader.vue";
 
 export default {
   components: {
+    ArchiveIcon,
+    TrashIcon,
     Logo,
     IconLogout,
     IconInbox,
     IconArchive,
+    Loader,
   },
   setup() {
     const emailsStore = useEmailsStore();
-
+    const loading = ref(true);
     onMounted(async () => {
       await emailsStore.fetchEmails();
+      loading.value = false;
     });
-    const emails = emailsStore.emails;
-    return {emails}
+    const emails = computed({
+      get() {
+        return emailsStore.emails
+      },
+      set(obj) {
+        emailsStore.emails = obj
+      }
+    })
+    return {emails, loading}
   },
   data() {
     return {
       pageTitle: 'Inbox',
-      selectedList: 0,
+      archived_emails: [],
+      selectedCount: 0,
+      selectedListTitle: 0,
       selectedEmails: [],
       selectAll: false
     }
@@ -101,6 +135,14 @@ export default {
     },
   },
   methods: {
+    selectEmail(email) {
+      if (this.selectedEmails.includes(email.id)) {
+        const index = this.selectedEmails.indexOf(email.id);
+        this.selectedEmails.splice(index, 1);
+      } else {
+        this.selectedEmails.push(email.id)
+      }
+    },
     openModal(email) {
       useModalStore().openModal(email);
     },
@@ -110,21 +152,41 @@ export default {
     selectList(index) {
       const titles = {0: 'Inbox', 1: 'Archive'};
       this.pageTitle = titles[index];
-      this.selectedList = index;
-
+      this.selectedListTitle = index;
+      if (index === 0) {
+        // Inbox
+        this.emails = useEmailsStore.fetchEmails.filter(email => !email.archived);
+      } else {
+        // Archive
+        this.emails = this.emails.filter(email => email.archived);
+      }
     },
     selectAllEmails() {
       if (this.selectAll) {
-        this.selectedEmails.value = this.emails.map((_, index) => index);
+        for (const [key, mail] of Object.entries(this.emails)) {
+          this.selectEmail(mail)
+        }
       } else {
-        this.selectedEmails.value = [];
+        this.selectedEmails = [];
       }
     },
     markAsRead() {
-      // Your implementation here
+      this.emails.forEach(email => {
+        if (this.selectedEmails.includes(email.id)) {
+          email['read'] = true;
+        }
+      });
+      this.selectAll = false
+      this.selectedEmails = []
     },
     archiveEmails() {
-      // Your implementation here
+      this.emails.forEach(email => {
+        if (this.selectedEmails.includes(email.id)) {
+          email['archived'] = true;
+        }
+      });
+      this.selectAll = false
+      this.selectedEmails = []
     },
   }
 }
@@ -132,13 +194,16 @@ export default {
 
 <style lang="scss">
 
-body {
-  margin: 0;
-}
-
 .layout {
   display: flex;
   height: 100vh;
+}
+
+.options__right {
+  display: flex;
+  margin-top: 10px;
+  right: 32px;
+  position: fixed;
 }
 
 .sidebar {
@@ -158,6 +223,23 @@ body {
 
 .text {
   display: inline-block;
+}
+
+.options__button {
+  color: #4B5563;
+  background: transparent;
+  font-weight: bold;
+  border: none;
+  border-radius: 54px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-left: 40px;
+
+  .text {
+    margin-left: 12px !important;
+  }
 }
 
 .sidebar__button {
@@ -203,20 +285,9 @@ body {
   }
 }
 
-.sidebar__menu {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar__item {
-  margin-bottom: 10px;
-  cursor: pointer;
-  color: #fff;
-}
-
 .content {
   flex: 1;
-  padding: 20px;
+  padding: 0 0 32px !important;
   height: 100%;
   overflow: auto;
 }
@@ -227,12 +298,19 @@ body {
 }
 
 .content__list {
+  margin-top: 12%;
   list-style: none;
   padding: 0;
+  padding-left: 32px !important;
 }
 
 .content__item {
   margin-bottom: 10px;
+  transition: opacity 0.3s;
+}
+
+.marked-as-read {
+  opacity: 0.5;
 }
 
 .options {
@@ -240,55 +318,31 @@ body {
   margin-bottom: 20px;
 }
 
-.checklist-options {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.left-options {
-  display: flex;
-  align-items: center;
-}
-
-.right-options {
-  display: flex;
-  align-items: center;
-}
-
 .checkbox-label {
   display: flex;
   align-items: center;
 }
 
-.action-button {
-  margin-left: 10px;
-  background: transparent;
-  color: #4B5563;
-  font-weight: 500;
-  font-size: 14px;
-  border: none;
-}
-
-.content__title-separator {
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
 .content__checklist {
   display: flex;
   align-items: center;
+
+  input {
+    margin-right: 20px;
+  }
 }
 
 .separator {
   height: 1px;
-  width: 100%;
+  width: 102%;
   background-color: #ddd;
   margin: 24px 0;
+  margin-left: -35px !important;
 }
 
 input[type="checkbox" i] {
   width: 16px !important;
   height: 16px !important;
 }
+
 </style>
