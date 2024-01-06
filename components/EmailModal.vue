@@ -4,7 +4,7 @@
 
       <div class="modal__options">
         <button
-            class="modal__options button"
+            class="modal__options button p-0"
             @click="closeModal()"
         >
           <CloseIcon class="options__icon"/>
