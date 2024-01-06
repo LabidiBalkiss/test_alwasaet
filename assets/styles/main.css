@@ -1,52 +1,84 @@
+@font-face {
+    font-family: 'PlusJakartaSans';
+    src: url('assets/fonts/PlusJakartaSans-Regular.ttf') format('ttf');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 body {
-  margin: 0;
+    margin: 0;
+    font-family: 'PlusJakartaSans', sans-serif;
 }
 
 .capitalize {
-  text-transform: capitalize;
+    text-transform: capitalize;
 }
 
-.header{
-  position: fixed;
-  background: #ffffff !important;
-  width: 100%;
-  padding: 24px 32px 12px 32px !important;
+.header {
+    position: fixed;
+    background: #ffffff !important;
+    width: 100%;
+    padding: 24px 32px 12px 32px !important;
 }
 
 .p-0 {
-  padding: 0 !important;
+    padding: 0 !important;
 }
 
 /* General styling for all scrollable elements */
 * {
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
 
-  /* Webkit browsers (Chrome, Safari) */
-  &::-webkit-scrollbar {
-    width: 2px;
-  }
+    /* Webkit browsers (Chrome, Safari) */
 
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-  }
+    &::-webkit-scrollbar {
+        width: 2px;
+    }
 
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
+    &::-webkit-scrollbar-thumb {
+        background-color: transparent;
+    }
 
-  &:hover {
-    /* Show the scrollbar on hover */
-    scrollbar-color: #d9d9d9 #F8FAFC;
-  }
+    &::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
 
-  /* Style the scrollbar on hover for Webkit browsers */
-  &:hover::-webkit-scrollbar-thumb {
-    background-color: #d3d3d3;
-  }
+    &:hover {
+        /* Show the scrollbar on hover */
+        scrollbar-color: #d9d9d9 #F8FAFC;
+    }
 
-  &:hover::-webkit-scrollbar-track {
-    background-color: #F8FAFC;
-  }
+    /* Style the scrollbar on hover for Webkit browsers */
+
+    &:hover::-webkit-scrollbar-thumb {
+        background-color: #d3d3d3;
+    }
+
+    &:hover::-webkit-scrollbar-track {
+        background-color: #F8FAFC;
+    }
+}
+
+input[type="checkbox" i] {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+input[type="checkbox" i]:checked:before {
+    background-color: green !important;
+}
+
+.flex__display {
+    display: flex;
+}
+
+.cursor__pointer {
+    cursor: pointer;
+}
+
+.mt_5 {
+    margin-top: 5px;
 }

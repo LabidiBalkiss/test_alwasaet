@@ -12,7 +12,7 @@
       >
         <IconInbox class="icon"/>
         <span class="text">Inbox</span>
-        <span class="badge">{{ emails.length }}</span>
+        <span class="badge">{{ inbox_mails.length }}</span>
       </button>
 
       <button
@@ -22,7 +22,7 @@
       >
         <IconArchive class="icon"/>
         <span class="text">Archive</span>
-        <span class="badge">{{ archived_emails.length }}</span>
+        <span class="badge">{{ archived_mails.length }}</span>
       </button>
 
       <!-- Bottom Logout button -->
@@ -39,19 +39,19 @@
         <div class="options">
           <label class="checkbox-label">
             <input type="checkbox" v-model="selectAll" @change="selectAllEmails"/>
-            Email Selected ({{ selectedCount }})
+            <strong>Email Selected ({{ selectedEmails.length }})</strong>
           </label>
           <div class="options__right">
             <button
                 class="options__button"
-                @click="markAsRead"
+                @click="emailAction('read', null)"
             >
               <ArchiveIcon class="options__icon"/>
               <span class="text">Mark as Read (r)</span>
             </button>
             <button
                 class="options__button"
-                @click="archiveEmails"
+                @click="emailAction('archived', null)"
             >
               <TrashIcon class="options__icon"/>
               <span class="text">Archive (a)</span>
@@ -63,16 +63,18 @@
         <Loader v-if="loading"></Loader>
         <li v-else v-for="email in emails" :key="email.id"
             :class="{ 'content__item': true, 'marked-as-read': email.read }">
-          <label class="checkbox-label content__checklist">
-            <input type="checkbox" @click="()=>{selectEmail(email)}"
-                   :checked="typeof selectedEmails[email.id] !== 'undefined'"/>
-            <strong @click="openModal(email)" class="capitalize">{{ email.subject }}</strong>
-          </label>
+          <div class="flex__display cursor__pointer">
+            <label class="checkbox-label content__checklist">
+              <input type="checkbox" @click="()=>{selectEmail(email)}"
+                     :checked="typeof selectedEmails[email.id] !== 'undefined'"/>
+            </label>
+            <strong @click="openModal(email)" class="capitalize mt_5">{{ email.subject }}</strong>
+          </div>
           <div class="separator"></div>
         </li>
       </ul>
     </div>
-    <EmailModal :email="selectedEmail" :isOpen="isModalOpen" @close="closeModal"/>
+    <EmailModal :email="selectedEmail" :isOpen="isModalOpen" @close="closeModal" @emailAction="emailAction"/>
   </div>
 </template>
 
@@ -106,7 +108,7 @@ export default {
       await emailsStore.fetchEmails();
       loading.value = false;
     });
-    const emails = computed({
+    const all_emails = computed({
       get() {
         return emailsStore.emails
       },
@@ -114,13 +116,11 @@ export default {
         emailsStore.emails = obj
       }
     })
-    return {emails, loading}
+    return {loading, all_emails}
   },
   data() {
     return {
       pageTitle: 'Inbox',
-      archived_emails: [],
-      selectedCount: 0,
       selectedListTitle: 0,
       selectedEmails: [],
       selectAll: false
@@ -132,6 +132,15 @@ export default {
     },
     isModalOpen() {
       return useModalStore().isOpen;
+    },
+    archived_mails() {
+      return this.all_emails.filter(email => email.archived)
+    },
+    inbox_mails() {
+      return this.all_emails.filter(email => !email.archived)
+    },
+    emails() {
+      return this.selectedListTitle === 1 ? this.archived_mails : this.inbox_mails;
     },
   },
   methods: {
@@ -145,6 +154,7 @@ export default {
     },
     openModal(email) {
       useModalStore().openModal(email);
+      this.emailAction('read', email.id)
     },
     closeModal() {
       useModalStore().closeModal();
@@ -153,41 +163,26 @@ export default {
       const titles = {0: 'Inbox', 1: 'Archive'};
       this.pageTitle = titles[index];
       this.selectedListTitle = index;
-      if (index === 0) {
-        // Inbox
-        this.emails = useEmailsStore.fetchEmails.filter(email => !email.archived);
-      } else {
-        // Archive
-        this.emails = this.emails.filter(email => email.archived);
-      }
     },
     selectAllEmails() {
+      this.selectedEmails = [];
       if (this.selectAll) {
         for (const [key, mail] of Object.entries(this.emails)) {
           this.selectEmail(mail)
         }
-      } else {
-        this.selectedEmails = [];
       }
     },
-    markAsRead() {
+    emailAction(action, id) {
       this.emails.forEach(email => {
-        if (this.selectedEmails.includes(email.id)) {
-          email['read'] = true;
+        if (id && email.id === id) {
+          email[action] = true;
+        } else if (this.selectAll && this.selectedEmails.includes(email.id)) {
+          email[action] = true;
         }
       });
       this.selectAll = false
       this.selectedEmails = []
-    },
-    archiveEmails() {
-      this.emails.forEach(email => {
-        if (this.selectedEmails.includes(email.id)) {
-          email['archived'] = true;
-        }
-      });
-      this.selectAll = false
-      this.selectedEmails = []
-    },
+    }
   }
 }
 </script>
@@ -310,7 +305,7 @@ export default {
 }
 
 .marked-as-read {
-  opacity: 0.5;
+  color: darkgrey;
 }
 
 .options {
@@ -338,11 +333,6 @@ export default {
   background-color: #ddd;
   margin: 24px 0;
   margin-left: -35px !important;
-}
-
-input[type="checkbox" i] {
-  width: 16px !important;
-  height: 16px !important;
 }
 
 </style>

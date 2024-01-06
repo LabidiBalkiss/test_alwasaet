@@ -13,12 +13,14 @@
         <div class=" modal__options right">
           <button
               class="modal__options button"
+              @click="emailAction('read')"
           >
             <ArchiveIcon class="options__icon"/>
             <span class="text">Mark as Read (r)</span>
           </button>
           <button
               class="modal__options button"
+               @click="emailAction('archived')"
           >
             <TrashIcon class="options__icon"/>
             <span class="text">Archive (a)</span>
@@ -40,6 +42,7 @@ import TrashIcon from "assets/icons/TrashIcon.vue";
 import CloseIcon from "assets/icons/CloseIcon.vue";
 
 export default {
+  emits: ['emailAction'],
   components: {CloseIcon, TrashIcon, ArchiveIcon},
   computed: {
     isModalOpen() {
@@ -53,6 +56,9 @@ export default {
     closeModal() {
       useModalStore().closeModal();
     },
+    emailAction(action) {
+      this.$emit('emailAction', action, this.selectedEmail.id);
+    }
   },
 };
 </script>
