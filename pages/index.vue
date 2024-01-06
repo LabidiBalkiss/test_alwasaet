@@ -52,6 +52,7 @@
             <button
                 class="options__button"
                 @click="emailAction('archived', null)"
+                v-if="selectedListTitle === 0"
             >
               <TrashIcon class="options__icon"/>
               <span class="text">Archive (a)</span>
@@ -68,7 +69,7 @@
               <input type="checkbox" @click="selectEmail(email)"
                      :checked="selectedEmails.includes(parseId(email.id))"/>
             </label>
-            <strong @click="openModal(email)" class="capitalize mt_5">{{ email.subject }} {{ email.id }}</strong>
+            <strong @click="openModal(email)" class="capitalize mt_5">{{ email.subject }}</strong>
           </div>
           <div class="separator"></div>
         </li>
@@ -192,6 +193,7 @@ export default {
       }
     },
     emailAction(action, id) {
+
       this.emails.forEach(email => {
         if (id && email.id === id) {
           email[action] = true;
