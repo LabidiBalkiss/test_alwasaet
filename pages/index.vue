@@ -65,10 +65,10 @@
             :class="{ 'content__item': true, 'marked-as-read': email.read }">
           <div class="flex__display cursor__pointer">
             <label class="checkbox-label content__checklist">
-              <input type="checkbox" @click="()=>{selectEmail(email)}"
-                     :checked="typeof selectedEmails[email.id] !== 'undefined'"/>
+              <input type="checkbox" @click="selectEmail(email)"
+                     :checked="selectedEmails.includes(parseId(email.id))"/>
             </label>
-            <strong @click="openModal(email)" class="capitalize mt_5">{{ email.subject }}</strong>
+            <strong @click="openModal(email)" class="capitalize mt_5">{{ email.subject }} {{ email.id }}</strong>
           </div>
           <div class="separator"></div>
         </li>
@@ -100,6 +100,13 @@ export default {
     IconInbox,
     IconArchive,
     Loader,
+  },
+  mounted() {
+    window.addEventListener('keydown', this.handleKeyDown);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeyDown);
   },
   setup() {
     const emailsStore = useEmailsStore();
@@ -144,12 +151,24 @@ export default {
     },
   },
   methods: {
+    handleKeyDown(event) {
+      if (event.key === 'a') {
+        this.emailAction('archived', null);
+      }
+      if (event.key === 'r') {
+        this.emailAction('read', null);
+      }
+    },
+    parseId(id) {
+      return parseInt(id, 10)
+    },
     selectEmail(email) {
-      if (this.selectedEmails.includes(email.id)) {
-        const index = this.selectedEmails.indexOf(email.id);
-        this.selectedEmails.splice(index, 1);
+      const id = this.parseId(email.id);
+      const index = this.selectedEmails.indexOf(id);
+      if (index !== -1) {
+        this.selectedEmails = this.selectedEmails.filter(selectedId => selectedId !== id);
       } else {
-        this.selectedEmails.push(email.id)
+        this.selectedEmails.push(id);
       }
     },
     openModal(email) {
@@ -167,8 +186,8 @@ export default {
     selectAllEmails() {
       this.selectedEmails = [];
       if (this.selectAll) {
-        for (const [key, mail] of Object.entries(this.emails)) {
-          this.selectEmail(mail)
+        for (const [key, email] of Object.entries(this.emails)) {
+          this.selectEmail(email)
         }
       }
     },
@@ -176,7 +195,7 @@ export default {
       this.emails.forEach(email => {
         if (id && email.id === id) {
           email[action] = true;
-        } else if (this.selectAll && this.selectedEmails.includes(email.id)) {
+        } else if (this.selectedEmails.includes(this.parseId(email.id))) {
           email[action] = true;
         }
       });

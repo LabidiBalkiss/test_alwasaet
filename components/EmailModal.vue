@@ -20,7 +20,7 @@
           </button>
           <button
               class="modal__options button"
-               @click="emailAction('archived')"
+              @click="emailAction('archived')"
           >
             <TrashIcon class="options__icon"/>
             <span class="text">Archive (a)</span>
@@ -44,6 +44,12 @@ import CloseIcon from "assets/icons/CloseIcon.vue";
 export default {
   emits: ['emailAction'],
   components: {CloseIcon, TrashIcon, ArchiveIcon},
+  mounted() {
+    window.addEventListener('keydown', this.handleKeyDown);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+  },
   computed: {
     isModalOpen() {
       return useModalStore().isOpen;
@@ -53,11 +59,24 @@ export default {
     },
   },
   methods: {
+    handleKeyDown(event) {
+      // Close modal on 'Escape' key press
+      if (event.key === 'Escape') {
+        this.closeModal();
+      }
+      if (event.key === 'a') {
+        this.emailAction('archived');
+      }
+      if (event.key === 'r') {
+        this.emailAction('read');
+      }
+    },
     closeModal() {
       useModalStore().closeModal();
     },
     emailAction(action) {
       this.$emit('emailAction', action, this.selectedEmail.id);
+      this.closeModal()
     }
   },
 };
