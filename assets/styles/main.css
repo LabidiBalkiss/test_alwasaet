@@ -82,3 +82,7 @@ input[type="checkbox" i]:checked:before {
 .mt_5 {
     margin-top: 5px;
 }
+
+.ml_12{
+    margin-left: 12px ;
+}

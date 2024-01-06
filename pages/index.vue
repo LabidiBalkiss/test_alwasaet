@@ -39,7 +39,7 @@
         <div class="options">
           <label class="checkbox-label">
             <input type="checkbox" v-model="selectAll" @change="selectAllEmails"/>
-            <strong>Email Selected ({{ selectedEmails.length }})</strong>
+            <strong class="ml_12">Email Selected ({{ selectedEmails.length }})</strong>
           </label>
           <div class="options__right">
             <button
